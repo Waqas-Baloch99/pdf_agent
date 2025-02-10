@@ -75,16 +75,15 @@ st.markdown("---")
 def process_pdf(file):
     """Process PDF file with error handling"""
     try:
+        # Save the uploaded PDF file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             tmp_file.write(file.read())
         
         loader = PyPDFLoader(tmp_file.name)
         documents = loader.load()
         
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=10000,
-            chunk_overlap=1000
-        )
+        # Split document into chunks for processing
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
         return text_splitter.split_documents(documents), tmp_file.name
     except Exception as e:
         st.error(f"Error processing PDF: {str(e)}")
@@ -121,8 +120,7 @@ def initialize_agent():
 qa_agent = initialize_agent()
 
 # File Upload Section
-uploaded_file = st.file_uploader("📤 Upload PDF Document", type=["pdf"], 
-                                help="Max file size: 50MB")
+uploaded_file = st.file_uploader("📤 Upload PDF Document", type=["pdf"], help="Max file size: 50MB")
 
 # Reset chat history if new file uploaded
 if uploaded_file and uploaded_file != st.session_state.current_file:
@@ -136,7 +134,7 @@ if uploaded_file:
     if chunks:
         # Document preview
         with st.expander("📄 Document Preview"):
-            preview_text = "\n".join([doc.page_content for doc in chunks[:2]])
+            preview_text = "\n".join([doc.page_content for doc in chunks[:2]])  # Show first 2 chunks
             st.markdown(f"```\n{preview_text[:1000]}\n...```")
         
         # Chat interface
@@ -152,9 +150,7 @@ if uploaded_file:
                 st.markdown(f'<div class="chat-ai">🤖 Analyst: {content}</div>', unsafe_allow_html=True)
         
         # Question input
-        question = st.text_input("Ask about the document:", 
-                               placeholder="Type your question here...",
-                               key="question_input")
+        question = st.text_input("Ask about the document:", placeholder="Type your question here...", key="question_input")
         
         col1, col2 = st.columns([1, 6])
         with col1:
@@ -165,8 +161,8 @@ if uploaded_file:
                     # Add user question to history
                     st.session_state.messages.append({"role": "user", "content": question})
                     
-                    # Get context
-                    context = "\n".join([chunk.page_content for chunk in chunks[:4]])
+                    # Get context (combine text chunks)
+                    context = "\n".join([chunk.page_content for chunk in chunks[:4]])  # Using first 4 chunks
                     
                     with st.spinner("💡 Analyzing..."):
                         try:
