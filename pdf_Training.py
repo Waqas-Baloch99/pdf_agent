@@ -38,7 +38,7 @@ st.markdown("""
         text-align: center; margin-bottom: 25px;
     }
     .upload-section { 
-        border: 2px dashed #2E86C1;
+       
         border-radius: 10px; padding: 2rem;
         text-align: center; margin-bottom: 2rem;
     }
@@ -68,7 +68,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header"><h1>📑 SmartDoc Analyzer Pro</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header"><h1>📑 Pdf Analyzer</h1></div>', unsafe_allow_html=True)
 
 def handle_file_upload():
     with st.container():
