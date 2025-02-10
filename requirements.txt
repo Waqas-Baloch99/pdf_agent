@@ -8,4 +8,6 @@ faiss-cpu
 sentence-transformers
 protobuf
 requests
+deepseek-openai
+
 
