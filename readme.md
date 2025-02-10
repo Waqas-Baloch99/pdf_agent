@@ -1,50 +1,58 @@
-# 📄 Doc Analyzer - AI-Powered PDF Chat Application
+# 📄 Doc Analyzer - AI-Powered PDF Chat Application  
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=Streamlit&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)  
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)  
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=Streamlit&logoColor=white)  
 
-![Doc Analyzer Demo](assets/demo.gif) <!-- Replace with actual demo media -->
+![Doc Analyzer Demo](assets/demo.gif) <!-- Replace with actual demo media -->  
 
-An intelligent document analysis tool powered by Google's Gemini Pro AI that enables natural language Q&A with PDF documents through an intuitive chat interface.
+An intelligent document analysis tool powered by Google's Gemini Pro AI that enables natural language Q&A with PDF documents through an intuitive chat interface.  
 
-## 🌟 Features
+## 🌍 Live Demo  
 
-- **Document Processing**
-  - PDF text extraction and intelligent chunking
-  - Context-aware document analysis
-  - Multi-page document support (first 3-4 pages processed for quick responses)
+Check out the live version of **Doc Analyzer**:  
 
-- **AI Capabilities**
-  - Google Gemini Pro integration
-  - Natural language understanding
-  - Contextual question answering
-  - Response formatting and sanitization
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://documentagent.streamlit.app)  
 
-- **User Interface**
-  - Streamlit-based web interface
-  - Chat-style interaction with history
-  - Responsive design for mobile/desktop
-  - File upload progress indicators
-  - Error handling and validation
+🔗 **Live Demo:** [https://documentagent.streamlit.app](https://documentagent.streamlit.app)  
 
-- **Security**
-  - API key encryption
-  - Session-based document handling
-  - Temporary file cleanup
-  - Environment variable management
+## 🌟 Features  
 
-## 📋 Prerequisites
+- **Document Processing**  
+  - PDF text extraction and intelligent chunking  
+  - Context-aware document analysis  
+  - Multi-page document support (first 3-4 pages processed for quick responses)  
 
-- Python 3.10+
-- Google API key ([Get from AI Studio](https://aistudio.google.com/))
-- 1GB+ free RAM (for document processing)
+- **AI Capabilities**  
+  - Google Gemini Pro integration  
+  - Natural language understanding  
+  - Contextual question answering  
+  - Response formatting and sanitization  
 
-## 🚀 Quick Start
+- **User Interface**  
+  - Streamlit-based web interface  
+  - Chat-style interaction with history  
+  - Responsive design for mobile/desktop  
+  - File upload progress indicators  
+  - Error handling and validation  
 
-### Local Installation
+- **Security**  
+  - API key encryption  
+  - Session-based document handling  
+  - Temporary file cleanup  
+  - Environment variable management  
 
-1. Clone repository:
-```bash
-git clone https://github.com/waqaskhosa99/pdfagent.git
-cd doc-analyzer
+## 📋 Prerequisites  
+
+- Python 3.10+  
+- Google API key ([Get from AI Studio](https://aistudio.google.com/))  
+- 1GB+ free RAM (for document processing)  
+
+## 🚀 Quick Start  
+
+### Local Installation  
+
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/Waqas-Baloch99/pdf_agent.git
+   cd pdf_agent
