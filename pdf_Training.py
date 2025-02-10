@@ -125,14 +125,15 @@ uploaded_file = st.file_uploader("📤 Upload PDF Document", type=["pdf"],
                                 help="Max file size: 50MB")
 
 # Reset chat history if new file uploaded
-if uploaded_file and uploaded_file != st.session_state.current_file:
-    st.session_state.messages = []
-    st.session_state.current_file = uploaded_file
-
 if uploaded_file:
+    # Ensure new file resets session history
+    if uploaded_file != st.session_state.current_file:
+        st.session_state.messages = []
+        st.session_state.current_file = uploaded_file
+
     with st.spinner("🔍 Analyzing document..."):
         chunks, tmp_path = process_pdf(uploaded_file)
-    
+
     if chunks:
         # Document preview
         with st.expander("📄 Document Preview"):
