@@ -158,11 +158,76 @@ def chat_interface():
 
 def initialize_agent():
     """Initialize the Q&A agent"""
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-pro",
-        temperature=0.3,
-        max_output_tokens=2048
-    )
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-pro",
+            temperature=0.3,
+            max_output_tokens=2048
+        )
+        template = """**Document Analysis Task**
+        You are an expert document analyst. Follow these guidelines:
+        1. Answer strictly based on the context
+        2. Acknowledge uncertainty when needed
+        3. Format answers with markdown
+        4. Highlight key points in **bold**
+        5. Keep answers under 300 words
+
+        **Context:**
+        {context}
+
+        **Question:** {question}
+
+        **Analysis Report:**"""
+        return LLMChain(
+            llm=llm,
+            prompt=PromptTemplate.from_template(template)
+        )
+    except Exception as e:
+        st.error(f"Failed to initialize agent: {str(e)}")
+        return None
+
+def process_question(question):
+    """Handle question processing"""
+    st.session_state.messages.append({"role": "user", "content": question})
+    
+    try:
+        qa_agent = initialize_agent()
+        if qa_agent is None:
+            st.error("Agent initialization failed")
+            return
+        
+        context = "\n".join([chunk.page_content for chunk in st.session_state.processed_docs['chunks'][:4]])
+        st.write("Context:", context)  # Debug log
+
+        with st.spinner("Analyzing content..."):
+            response = qa_agent.run({
+                "context": context,
+                "question": question
+            })
+            st.write("Response:", response)  # Debug log
+            
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.rerun()
+        
+    except Exception as e:
+        st.error(f"Analysis failed: {str(e)}")
+
+def main():
+    initialize_session_state()
+    
+    # File upload section
+    if handle_file_upload():
+        chat_interface()
+    
+    # Footer
+    st.markdown("""
+    <div class="footer">
+        <p>Developed by Waqas Baloch • 📧 <a href="mailto:waqaskhosa99@gmail.com" style="color: white;">waqaskhosa99@gmail.com</a></p>
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
 
     template = """**Document Analysis Task**
 You are an expert document analyst. Follow these guidelines:
