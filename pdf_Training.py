@@ -242,11 +242,11 @@ def main():
     if handle_file_upload():
         chat_interface()
     
-    st.markdown("""
-    <div class="footer">
-        <p>Developed by Waqas Baloch - 📧 <a href="mailto:waqaskhosa99@gmail.com">waqaskhosa99@gmail.com</a></p>
-    </div>
-    """, unsafe_allow_html=True)
+   st.markdown("""
+<div class="footer">
+    <p>Developed by Waqas Baloch - <span>&#128231;</span> <a href="mailto:waqaskhosa99@gmail.com">waqaskhosa99@gmail.com</a></p>
+</div>
+""", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
