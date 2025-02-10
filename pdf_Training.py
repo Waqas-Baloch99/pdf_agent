@@ -169,14 +169,10 @@ def initialize_agent():
                 User Question: {question}
 
                 Respond in this format:
-                ### Answer
-                [Clear, specific answer using exact document terms]
+                
+                [Clear/authentic/relevant, specific answer using exact document terms]
 
-                ### Supporting Details
-                - [Relevant point 1]
-                - [Relevant point 2]
-                - [Relevant point 3]
-                """)
+               
             )
         except Exception as e:
             st.error(f"🤖 Agent initialization failed: {str(e)}")
