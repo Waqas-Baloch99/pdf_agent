@@ -32,7 +32,7 @@ except KeyError:
     st.error("Google API key not found in secrets!")
     st.stop()
 
-# Custom CSS styling
+# Enhanced responsive CSS styling
 st.markdown("""
 <style>
 .header {
@@ -50,36 +50,55 @@ st.markdown("""
     text-align: center;
     margin-bottom: 2rem;
 }
+.chat-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
 .chat-bubble {
     padding: 15px 20px;
     margin: 12px 0;
+    width: fit-content;
     max-width: 80%;
-    clear: both;
     border-radius: 15px;
-    display: flex; /* Use flexbox for icon and text */
-    align-items: flex-start; /* Align items to the top */
+    display: flex;
+    align-items: flex-start;
+    clear: both;
 }
 .user {
     background: #2E86C1;
     color: white;
-    float: right;
-    justify-content: flex-end; /* Align text to the right */
+    margin-left: auto;
 }
 .assistant {
     background: #f0f2f6;
     color: #2c3e50;
-    float: left;
-    justify-content: flex-start; /* Align text to the left */
+    margin-right: auto;
 }
 .chat-bubble .icon {
-    margin-right: 10px; /* Add space between icon and text */
-    font-size: 20px; /* Adjust icon size as needed */
+    margin: 0 10px;
+    font-size: 1.2em;
 }
-
 .footer {
     margin-top: 50px;
     padding: 20px;
     text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chat-bubble {
+        max-width: 90%;
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    .chat-bubble .icon {
+        font-size: 1em;
+        margin: 0 8px;
+    }
+    .upload-section {
+        padding: 1rem;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -167,15 +186,17 @@ def process_question(question):
 def main():
     if handle_file_upload():
         st.markdown("### 💬 Document Q&A")
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
         for message in st.session_state.messages:
             css_class = "user" if message["role"] == "user" else "assistant"
-            icon = "👤" if message["role"] == "user" else "🤖"  # User and bot icons
+            icon = "👤" if message["role"] == "user" else "🤖"
             st.markdown(
                 f'<div class="chat-bubble {css_class}"><span class="icon">{icon}</span>{message["content"]}</div>',
                 unsafe_allow_html=True
             )
 
+        st.markdown('</div>', unsafe_allow_html=True)
         question = st.text_input("Ask your question:", key="question_input")
 
         if st.button("Get Answer") and question:
