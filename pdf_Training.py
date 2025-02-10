@@ -161,22 +161,39 @@ def initialize_agent():
                     **model_config["params"],
                     google_api_key=api_key
                 )
-            elif selected_model == "deepseek-r1":
-                llm = llm_class(api_key=api_key)
+                
+                st.session_state.qa_agent = LLMChain(
+                    llm=llm,
+                    prompt=PromptTemplate.from_template("""
+                    Analyze the document and provide a concise answer:
+                    
+                    Context: {context}
+                    Question: {question}
+                    
+                    Answer format:
+                    - Direct answer (1-2 sentences)
+                    - 3 key supporting points
+                    """)
+                )
+                
+            elif selected_model == "deepseek-chat":
+                client = llm_class(
+                    api_key=api_key,
+                    base_url=model_config["params"]["base_url"]
+                )
+                
+                def deepseek_chain(inputs):
+                    response = client.chat.completions.create(
+                        model=model_config["params"]["model"],
+                        messages=[
+                            {"role": "system", "content": "Analyze the document and provide a concise answer."},
+                            {"role": "user", "content": f"Document Context: {inputs['context']}\nQuestion: {inputs['question']}"}
+                        ]
+                    )
+                    return response.choices[0].message.content
+                
+                st.session_state.qa_agent = deepseek_chain
 
-            st.session_state.qa_agent = LLMChain(
-                llm=llm,
-                prompt=PromptTemplate.from_template("""
-                Analyze the document and provide a concise answer:
-                
-                Context: {context}
-                Question: {question}
-                
-                Answer format:
-                - Direct answer (1-2 sentences)
-                - 3 key supporting points
-                """)
-            )
             st.session_state.selected_model = selected_model
 
         except Exception as e:
