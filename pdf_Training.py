@@ -171,8 +171,8 @@ def initialize_agent():
                     Question: {question}
                     
                     Answer format:
-                    - Direct answer (1-2 sentences)
-                    - 3 key supporting points
+                    - Analyze the document and provide a concise answer
+                    
                     """)
                 )
                 
