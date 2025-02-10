@@ -156,7 +156,7 @@ def initialize_agent():
                 Question: {question}
 
                 Answer format:
-                - Analyze the document and provide a concise answer
+                - 
                
                 """)
             )
