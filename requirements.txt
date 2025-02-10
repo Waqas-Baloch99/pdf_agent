@@ -1,5 +1,5 @@
-langchain-community==0.0.34
-langchain==0.1.20
+langchain-community
+langchain
 langchain-google-genai
 pypdf==4.2.0
 python-dotenv==1.0.1
