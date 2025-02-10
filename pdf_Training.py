@@ -157,12 +157,9 @@ def initialize_agent():
                 
                 Respond in this exact format:
                 ### Specific Answer
-                [Direct, detailed answer using exact terms from document]
+                [Direct, and authenticate answer]
                 
-                ### Key Details
-                - [Relevant fact 1]
-                - [Relevant fact 2]
-                - [Relevant fact 3]
+            
                 """)
             )
         except Exception as e:
