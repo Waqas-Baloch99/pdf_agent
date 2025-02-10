@@ -14,7 +14,7 @@ load_dotenv()
 # Initialize session state
 def initialize_session_state():
     session_defaults = {
-        "messages": [],
+        "messages":,
         "processed_docs": None,
         "file_key": 0,
         "qa_agent": None,
@@ -26,7 +26,7 @@ def initialize_session_state():
 
 initialize_session_state()
 
-# Model Configuration
+# Model Configuration (Replace with actual DeepSeek class)
 MODEL_OPTIONS = {
     "gemini-pro": {
         "name": "Google Gemini Pro",
@@ -36,14 +36,14 @@ MODEL_OPTIONS = {
     "deepseek-r1": {
         "name": "DeepSeek R1",
         "key_env": "DEEPSEEK_API_KEY",
-        "class": None  # Replace with actual DeepSeek class
+        "class": DeepSeekAI  # Replace with actual DeepSeek class if available
     }
 }
 
 # Custom CSS styling
 st.markdown("""
 <style>
-    .header { 
+  .header {  
         padding: 20px;
         background: linear-gradient(45deg, #2E86C1, #3498DB);
         color: white;
@@ -51,37 +51,37 @@ st.markdown("""
         text-align: center;
         margin-bottom: 25px;
     }
-    .model-selector {
+  .model-selector {
         margin-bottom: 1.5rem;
         padding: 10px;
         border-radius: 8px;
         background: #f8f9fa;
     }
-    .upload-section { 
+  .upload-section {  
         border: 2px dashed #2E86C1;
         border-radius: 10px;
         padding: 2rem;
         text-align: center;
         margin-bottom: 2rem;
     }
-    .chat-bubble { 
+  .chat-bubble {  
         padding: 15px 20px;
         margin: 12px 0;
         max-width: 80%;
         clear: both;
         border-radius: 15px;
     }
-    .user { 
+  .user {  
         background: #2E86C1;
         color: white;
         float: right;
     }
-    .assistant { 
+  .assistant {  
         background: #f0f2f6;
         color: #2c3e50;
         float: left;
     }
-    .footer { 
+  .footer {  
         margin-top: 50px;
         padding: 20px;
         text-align: center;
@@ -127,11 +127,11 @@ def handle_file_upload():
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                     tmp_file.write(uploaded_file.getbuffer())
-                
+
                 with st.spinner("Analyzing document..."):
                     loader = PyPDFLoader(tmp_file.name)
                     documents = loader.load()
-                    
+
                     text_splitter = RecursiveCharacterTextSplitter(
                         chunk_size=10000,
                         chunk_overlap=1000
@@ -151,10 +151,10 @@ def handle_file_upload():
                 return False
 
 def initialize_agent():
-    if not st.session_state.qa_agent or st.session_state.selected_model != selected_model:
+    if not st.session_state.qa_agent or st.session_state.selected_model!= selected_model:
         try:
             model_config = MODEL_OPTIONS[selected_model]
-            
+
             if selected_model == "gemini-pro":
                 llm = model_config["class"](
                     model=selected_model,
@@ -167,22 +167,22 @@ def initialize_agent():
                     model_name=selected_model,
                     api_key=api_key
                 )
-            
+
             st.session_state.qa_agent = LLMChain(
                 llm=llm,
                 prompt=PromptTemplate.from_template("""
                 Analyze the document and provide a concise answer:
-                
+
                 Context: {context}
                 Question: {question}
-                
+
                 Answer format:
                 - Direct answer (1-2 sentences)
                 - 3 key supporting points
                 """)
             )
             st.session_state.selected_model = selected_model
-            
+
         except Exception as e:
             st.error(f"Model initialization failed: {str(e)}")
     return st.session_state.qa_agent
@@ -193,7 +193,7 @@ def process_question(question):
         context = " ".join([
             chunk.page_content[:2000] 
             for chunk in st.session_state.processed_docs['chunks'][:3]
-        )
+        ])
 
         with st.spinner("Generating answer..."):
             response = qa_agent.run({
@@ -205,7 +205,7 @@ def process_question(question):
             "role": "assistant",
             "content": response
         })
-        
+
     except Exception as e:
         st.error(f"Error: {str(e)}")
     finally:
@@ -214,20 +214,20 @@ def process_question(question):
 def main():
     if handle_file_upload():
         st.markdown("### 💬 Document Q&A")
-        
+
         for message in st.session_state.messages:
             css_class = "user" if message["role"] == "user" else "assistant"
             st.markdown(
-                f'<div class="chat-bubble {css_class}">{message["content"]}</div>',
+                f'<div class="chat-bubble {css_class}">{message["content"]}</div>',  # Corrected line
                 unsafe_allow_html=True
             )
-        
+
         question = st.text_input("Ask your question:", key="question_input")
-        
+
         if st.button("Get Answer") and question:
             st.session_state.messages.append({"role": "user", "content": question})
             process_question(question)
-    
+
     st.markdown("""
     <div class="footer">
         <p>Developed by Waqas Baloch • Contact: waqaskhosa99@gmail.com</p>
