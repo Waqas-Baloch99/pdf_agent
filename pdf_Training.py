@@ -57,6 +57,9 @@ st.markdown("""
         max-width: 80%;
         clear: both;
         position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     .user { 
         background: #2E86C1;
@@ -72,7 +75,17 @@ st.markdown("""
         float: left;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         animation: typing 1s steps(40), blinkCaret 0.75s step-end infinite;
-        border-left: 4px solid #2E86C1;
+    }
+    .bot-icon {
+        animation: shake 0.5s ease-in-out;
+        font-size: 24px;
+    }
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-3px); }
+        50% { transform: translateX(3px); }
+        75% { transform: translateX(-3px); }
+        100% { transform: translateX(0); }
     }
     @keyframes typing {
         from { width: 0 }
@@ -151,15 +164,18 @@ def initialize_agent():
                 ),
                 prompt=PromptTemplate.from_template("""
                 Analyze this document content and provide specific answers:
-                
+
                 Document Content: {context}
                 User Question: {question}
-                
-                Respond in this exact format:
-              
-                [Direct, and authenticate answer]
-                
-            
+
+                Respond in this format:
+                ### Answer
+                [Clear, specific answer using exact document terms]
+
+                ### Supporting Details
+                - [Relevant point 1]
+                - [Relevant point 2]
+                - [Relevant point 3]
                 """)
             )
         except Exception as e:
@@ -199,17 +215,22 @@ def chat_interface():
             preview_text = " [...] ".join([
                 doc.page_content[:400] 
                 for doc in st.session_state.processed_docs['chunks'][:2]
-            ])
+            )
             st.markdown(f"```\n{preview_text}\n...```")
         
         st.markdown("### 💬 Document Analysis Chat")
         
         for message in st.session_state.messages:
-            css_class = "user" if message["role"] == "user" else "assistant"
-            st.markdown(
-                f'<div class="chat-bubble {css_class}">{message["content"]}</div>',
-                unsafe_allow_html=True
-            )
+            if message["role"] == "user":
+                st.markdown(
+                    f'<div class="chat-bubble user">👤 {message["content"]}</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f'<div class="chat-bubble assistant"><span class="bot-icon">🤖</span> {message["content"]}</div>',
+                    unsafe_allow_html=True
+                )
         
         question = st.text_input(
             "Ask a specific question about the document:",
