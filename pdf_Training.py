@@ -11,7 +11,6 @@ import tempfile
 # Load environment variables
 load_dotenv()
 
-# Initialize session state
 def initialize_session_state():
     session_defaults = {
         "messages": [],
@@ -25,13 +24,11 @@ def initialize_session_state():
 
 initialize_session_state()
 
-# Google API Key Configuration
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     st.error("Google API key not found! Configure it in .env or secrets.")
     st.stop()
 
-# Custom CSS for improved performance
 st.markdown("""
 <style>
     .header { 
@@ -74,7 +71,6 @@ st.markdown("""
 st.markdown('<div class="header"><h1>📑 SmartDoc Analyzer Pro</h1></div>', unsafe_allow_html=True)
 
 def handle_file_upload():
-    """Handle PDF upload and processing with caching"""
     with st.container():
         st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         uploaded_file = st.file_uploader(
@@ -100,13 +96,13 @@ def handle_file_upload():
                     documents = loader.load()
                     
                     text_splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=8000,  # Reduced chunk size for faster processing
+                        chunk_size=8000,
                         chunk_overlap=800
                     )
                     chunks = text_splitter.split_documents(documents)
 
                     st.session_state.processed_docs = {
-                        'chunks': chunks[:6],  # Use only first 6 chunks
+                        'chunks': chunks[:6],
                         'file_id': uploaded_file.file_id
                     }
                     st.session_state.messages = []
@@ -119,14 +115,13 @@ def handle_file_upload():
                 return False
 
 def initialize_agent():
-    """Initialize and cache the LLM agent"""
     if not st.session_state.qa_agent:
         try:
             st.session_state.qa_agent = LLMChain(
                 llm=ChatGoogleGenerativeAI(
                     model="gemini-pro",
                     temperature=0.3,
-                    max_output_tokens=1024,  # Reduced for faster responses
+                    max_output_tokens=1024,
                     google_api_key=GOOGLE_API_KEY
                 ),
                 prompt=PromptTemplate.from_template("""
@@ -144,15 +139,14 @@ def initialize_agent():
     return st.session_state.qa_agent
 
 def process_question(question):
-    """Handle question processing with streaming"""
     try:
         qa_agent = initialize_agent()
         if not qa_agent:
             return
 
         context = " ".join([
-            chunk.page_content[:2000]  # Truncate long content
-            for chunk in st.session_state.processed_docs['chunks'][:3]  # Use first 3 chunks
+            chunk.page_content[:2000]
+            for chunk in st.session_state.processed_docs['chunks'][:3]
         ])
 
         with st.spinner("💡 Analyzing..."):
@@ -161,7 +155,6 @@ def process_question(question):
                 "question": question
             })
 
-        # Add response to history
         st.session_state.messages.append({
             "role": "assistant",
             "content": response
@@ -173,18 +166,16 @@ def process_question(question):
         st.rerun()
 
 def chat_interface():
-    """Interactive chat interface"""
     if st.session_state.processed_docs:
         with st.expander("📄 Document Preview", expanded=False):
             preview_text = " ".join([
                 doc.page_content[:500] 
                 for doc in st.session_state.processed_docs['chunks'][:2]
-            )
+            ])  # Fixed parenthesis
             st.markdown(f"```\n{preview_text}\n...```")
         
         st.markdown("### 💬 Document Q&A")
         
-        # Display chat history
         for message in st.session_state.messages:
             css_class = "user" if message["role"] == "user" else "assistant"
             icon = "👤" if message["role"] == "user" else "🤖"
@@ -193,7 +184,6 @@ def chat_interface():
                 unsafe_allow_html=True
             )
         
-        # Question input
         question = st.text_input(
             "Ask about the document:", 
             placeholder="Type your question...",
@@ -209,7 +199,6 @@ def main():
     if handle_file_upload():
         chat_interface()
     
-    # Footer
     st.markdown("""
     <div class="footer">
         <p>Developed by Waqas Baloch • 📧 <a href="mailto:waqaskhosa99@gmail.com" style="color: white;">waqaskhosa99@gmail.com</a></p>
