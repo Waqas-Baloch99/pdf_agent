@@ -7,6 +7,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import tempfile
+from deepseek_openai import DeepSeek  # Correct import for DeepSeekAI
 
 # Load environment variables
 load_dotenv()
@@ -14,7 +15,7 @@ load_dotenv()
 # Initialize session state
 def initialize_session_state():
     session_defaults = {
-        "messages":[],
+        "messages": [],
         "processed_docs": None,
         "file_key": 0,
         "qa_agent": None,
@@ -26,7 +27,7 @@ def initialize_session_state():
 
 initialize_session_state()
 
-# Model Configuration (Replace with actual DeepSeek class)
+# Model Configuration
 MODEL_OPTIONS = {
     "gemini-pro": {
         "name": "Google Gemini Pro",
@@ -36,7 +37,7 @@ MODEL_OPTIONS = {
     "deepseek-r1": {
         "name": "DeepSeek R1",
         "key_env": "DEEPSEEK_API_KEY",
-        "class": DeepSeekAI  # Replace with actual DeepSeek class if available
+        "class": DeepSeek
     }
 }
 
@@ -151,7 +152,7 @@ def handle_file_upload():
                 return False
 
 def initialize_agent():
-    if not st.session_state.qa_agent or st.session_state.selected_model!= selected_model:
+    if not st.session_state.qa_agent or st.session_state.selected_model != selected_model:
         try:
             model_config = MODEL_OPTIONS[selected_model]
 
@@ -162,9 +163,7 @@ def initialize_agent():
                     google_api_key=api_key
                 )
             elif selected_model == "deepseek-r1":
-                # Replace with actual DeepSeek initialization
                 llm = model_config["class"](
-                    model_name=selected_model,
                     api_key=api_key
                 )
 
@@ -218,7 +217,7 @@ def main():
         for message in st.session_state.messages:
             css_class = "user" if message["role"] == "user" else "assistant"
             st.markdown(
-                f'<div class="chat-bubble {css_class}">{message["content"]}</div>',  # Corrected line
+                f'<div class="chat-bubble {css_class}">{message["content"]}</div>',
                 unsafe_allow_html=True
             )
 
