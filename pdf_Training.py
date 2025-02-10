@@ -76,17 +76,6 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         animation: typing 1s steps(40), blinkCaret 0.75s step-end infinite;
     }
-    .bot-icon {
-        animation: shake 0.5s ease-in-out;
-        font-size: 24px;
-    }
-    @keyframes shake {
-        0% { transform: translateX(0); }
-        25% { transform: translateX(-3px); }
-        50% { transform: translateX(3px); }
-        75% { transform: translateX(-3px); }
-        100% { transform: translateX(0); }
-    }
     @keyframes typing {
         from { width: 0 }
         to { width: 100% }
@@ -129,7 +118,7 @@ def handle_file_upload():
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                     tmp_file.write(uploaded_file.getbuffer())
                 
-                with st.spinner("🔍 Analyzing document structure..."):
+                with st.spinner("🔍 Analyzing document..."):
                     loader = PyPDFLoader(tmp_file.name)
                     documents = loader.load()
                     
@@ -159,23 +148,18 @@ def initialize_agent():
                 llm=ChatGoogleGenerativeAI(
                     model="gemini-pro",
                     temperature=0.3,
-                    max_output_tokens=1500,
+                    max_output_tokens=800,
                     google_api_key=GOOGLE_API_KEY
                 ),
                 prompt=PromptTemplate.from_template("""
-                Analyze this document content and provide specific answers:
-
-                Document Content: {context}
-                User Question: {question}
-
-                Respond in this format:
-                ### Answer
-                [Clear, specific answer using exact document terms]
-
-                ### Supporting Details
-                - [Relevant point 1]
-                - [Relevant point 2]
-                - [Relevant point 3]
+                Provide concise answer based on this document content:
+                
+                Context: {context}
+                Question: {question}
+                
+                Answer format:
+                • Direct answer (max 50 words)
+                • Key supporting points (3 bullet points)
                 """)
             )
         except Exception as e:
@@ -188,12 +172,12 @@ def process_question(question):
         if not qa_agent:
             return
 
-        context = "\n".join([
-            f"Page {idx+1}: {chunk.page_content[:2500]}"
-            for idx, chunk in enumerate(st.session_state.processed_docs['chunks'][:3])
+        context = " ".join([
+            chunk.page_content[:2000]
+            for chunk in st.session_state.processed_docs['chunks'][:3]
         ])
 
-        with st.spinner("🔍 Deep analysis in progress..."):
+        with st.spinner("💡 Analyzing..."):
             response = qa_agent.run({
                 "context": context,
                 "question": question
@@ -215,10 +199,10 @@ def chat_interface():
             preview_text = " [...] ".join([
                 doc.page_content[:400] 
                 for doc in st.session_state.processed_docs['chunks'][:2]
-            )
+            ])
             st.markdown(f"```\n{preview_text}\n...```")
         
-        st.markdown("### 💬 Document Analysis Chat")
+        st.markdown("### 💬 Document Q&A")
         
         for message in st.session_state.messages:
             if message["role"] == "user":
@@ -228,18 +212,18 @@ def chat_interface():
                 )
             else:
                 st.markdown(
-                    f'<div class="chat-bubble assistant"><span class="bot-icon">🤖</span> {message["content"]}</div>',
+                    f'<div class="chat-bubble assistant">🤖 {message["content"]}</div>',
                     unsafe_allow_html=True
                 )
         
         question = st.text_input(
-            "Ask a specific question about the document:",
-            placeholder="Type your question here...",
+            "Ask your question:",
+            placeholder="Type question here...",
             key="question_input",
             label_visibility="collapsed"
         )
         
-        if st.button("🚀 Get Detailed Answer", use_container_width=True) and question:
+        if st.button("🚀 Get Answer", use_container_width=True) and question:
             st.session_state.messages.append({"role": "user", "content": question})
             process_question(question)
 
@@ -249,7 +233,7 @@ def main():
     
     st.markdown("""
     <div class="footer">
-        <p>Developed by Waqas Baloch • 📧 <a href="mailto:waqaskhosa99@gmail.com">waqaskhosa99@gmail.com</a></p>
+        <p>Developed by Waqas Baloch • <a href="mailto:waqaskhosa99@gmail.com">Contact</a></p>
     </div>
     """, unsafe_allow_html=True)
 
