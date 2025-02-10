@@ -7,7 +7,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import tempfile
-from deepseek_openai import DeepSeek  # Correct import for DeepSeekAI
+from openai import DeepSeek  # Correct import for DeepSeekAI
 
 # Load environment variables
 load_dotenv()
