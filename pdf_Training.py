@@ -156,7 +156,7 @@ def initialize_agent():
                 User Question: {question}
                 
                 Respond in this exact format:
-                ### Specific Answer
+              
                 [Direct, and authenticate answer]
                 
             
