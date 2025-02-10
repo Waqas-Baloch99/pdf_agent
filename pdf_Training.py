@@ -16,81 +16,145 @@ st.markdown("""
 <style>
     .header { 
         padding: 20px;
-        background-color: #2E86C1;
+        background: linear-gradient(45deg, #2E86C1, #3498DB);
         color: white;
-        border-radius: 10px;
+        border-radius: 15px;
         text-align: center;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .upload-section {
+        border: 2px dashed #2E86C1;
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
     }
     .chat-user {
-        background-color: #2E86C1;
+        background: #2E86C1;
         color: white;
-        padding: 10px;
-        border-radius: 15px 15px 0 15px;
-        margin: 5px 0;
+        padding: 12px 18px;
+        border-radius: 20px 20px 0 20px;
+        margin: 8px 0;
         max-width: 80%;
         float: right;
         clear: both;
     }
     .chat-ai {
-        background-color: #EBEDEF;
+        background: #F8F9FA;
         color: #2C3E50;
-        padding: 10px;
-        border-radius: 15px 15px 15px 0;
-        margin: 5px 0;
+        padding: 12px 18px;
+        border-radius: 20px 20px 20px 0;
+        margin: 8px 0;
         max-width: 80%;
         float: left;
         clear: both;
+        border: 1px solid #DEE2E6;
     }
     .footer {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: #2C3E50;
+        margin-top: 50px;
+        padding: 20px;
+        background: #2C3E50;
         color: white;
         text-align: center;
-        padding: 10px;
-        left: 0;
+        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize configuration
-GOOGLE_API_KEY = st.secrets["google"]["api_key"]
+def initialize_session_state():
+    """Initialize session state variables"""
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "processed_docs" not in st.session_state:
+        st.session_state.processed_docs = None
+    if "file_key" not in st.session_state:
+        st.session_state.file_key = 0
 
-# Check for API key
+# Initialize configuration
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+
 if not GOOGLE_API_KEY:
-    st.error("GOOGLE_API_KEY not found in environment variables!")
+    st.error("Google API key not found! Please configure it in your environment.")
     st.stop()
 
-# Initialize session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "current_file" not in st.session_state:
-    st.session_state.current_file = None
-
 # App Header
-st.markdown('<div class="header"><h1>📑 SmartDoc Analyzer</h1></div>', unsafe_allow_html=True)
-st.markdown("---")
+st.markdown('<div class="header"><h1>📑 SmartDoc Analyzer Pro</h1></div>', unsafe_allow_html=True)
 
-def process_pdf(file):
-    """Process PDF file with error handling"""
-    try:
-        # Save the uploaded PDF file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(file.read())
+def handle_file_upload():
+    """Custom file upload handler with preview"""
+    with st.container():
+        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
+        uploaded_file = st.file_uploader(
+            "Drag and drop or click to upload PDF",
+            type=["pdf"],
+            key=f"uploader_{st.session_state.file_key}",
+            help="Max file size: 50MB"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
         
-        loader = PyPDFLoader(tmp_file.name)
-        documents = loader.load()
+        if uploaded_file is not None:
+            if st.session_state.processed_docs and st.session_state.processed_docs.get('file_id') == uploaded_file.file_id:
+                st.info("This document has already been processed.")
+                return True
+            
+            with st.spinner("Analyzing document structure..."):
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                        tmp_file.write(uploaded_file.read())
+                    
+                    loader = PyPDFLoader(tmp_file.name)
+                    documents = loader.load()
+                    
+                    text_splitter = RecursiveCharacterTextSplitter(
+                        chunk_size=10000,
+                        chunk_overlap=1000
+                    )
+                    chunks = text_splitter.split_documents(documents)
+                    
+                    st.session_state.processed_docs = {
+                        'chunks': chunks,
+                        'file_id': uploaded_file.file_id
+                    }
+                    st.session_state.messages = []
+                    os.unlink(tmp_file.name)
+                    return True
+                
+                except Exception as e:
+                    st.error(f"Error processing PDF: {str(e)}")
+                    st.session_state.file_key += 1
+                    return False
+
+def chat_interface():
+    """Main chat interface"""
+    if st.session_state.processed_docs:
+        with st.expander("📄 Document Preview", expanded=True):
+            preview_text = "\n".join([doc.page_content for doc in st.session_state.processed_docs['chunks'][:2]])
+            st.markdown(f"```\n{preview_text[:500]}\n...```")
         
-        # Split document into chunks for processing
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
-        return text_splitter.split_documents(documents), tmp_file.name
-    except Exception as e:
-        st.error(f"Error processing PDF: {str(e)}")
-        return None, None
-    finally:
-        if 'tmp_file' in locals() and tmp_file.name:
-            os.unlink(tmp_file.name)
+        st.markdown("### 💬 Document Q&A")
+        
+        # Display chat history
+        for message in st.session_state.messages:
+            role = message["role"]
+            content = message["content"]
+            if role == "user":
+                st.markdown(f'<div class="chat-user">👤 {content}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="chat-ai">🤖 {content}</div>', unsafe_allow_html=True)
+        
+        # Question input
+        question = st.text_input(
+            "Ask about the document:", 
+            placeholder="Type your question here...",
+            key="question_input"
+        )
+        
+        if st.button("🚀 Ask", use_container_width=True):
+            if not question:
+                st.warning("Please enter a question")
+            else:
+                process_question(question)
 
 def initialize_agent():
     """Initialize the Q&A agent"""
@@ -100,89 +164,59 @@ def initialize_agent():
         max_output_tokens=2048
     )
 
-    template = """You are a professional document analyst. Answer based on the context.
-    If answer isn't in document, state that clearly. Be concise and accurate.
+    template = """**Document Analysis Task**
+You are an expert document analyst. Follow these guidelines:
+1. Answer strictly based on the context
+2. Acknowledge uncertainty when needed
+3. Format answers with markdown
+4. Highlight key points in **bold**
+5. Keep answers under 300 words
 
-    Context:
-    {context}
+**Context:**
+{context}
 
-    Question: {question}
-    Analytical Answer:"""
+**Question:** {question}
 
-    prompt = PromptTemplate(
-        input_variables=["context", "question"],
-        template=template
+**Analysis Report:**"""
+    
+    return LLMChain(
+        llm=llm,
+        prompt=PromptTemplate.from_template(template)
     )
 
-    return LLMChain(llm=llm, prompt=prompt)
-
-# Initialize agent
-qa_agent = initialize_agent()
-
-# File Upload Section
-uploaded_file = st.file_uploader("📤 Upload PDF Document", type=["pdf"], help="Max file size: 50MB")
-
-# Reset chat history if new file uploaded
-if uploaded_file and uploaded_file != st.session_state.current_file:
-    st.session_state.messages = []
-    st.session_state.current_file = uploaded_file
-
-if uploaded_file:
-    with st.spinner("🔍 Analyzing document..."):
-        chunks, tmp_path = process_pdf(uploaded_file)
+def process_question(question):
+    """Handle question processing"""
+    st.session_state.messages.append({"role": "user", "content": question})
     
-    if chunks:
-        # Document preview
-        with st.expander("📄 Document Preview"):
-            preview_text = "\n".join([doc.page_content for doc in chunks[:2]])  # Show first 2 chunks
-            st.markdown(f"```\n{preview_text[:1000]}\n...```")
+    try:
+        qa_agent = initialize_agent()
+        context = "\n".join([chunk.page_content for chunk in st.session_state.processed_docs['chunks'][:4]])
         
-        # Chat interface
-        st.markdown("### 💬 Document Chat")
+        with st.spinner("Analyzing content..."):
+            response = qa_agent.run({
+                "context": context,
+                "question": question
+            })
+            
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        st.rerun()
         
-        # Display chat history
-        for message in st.session_state.messages:
-            role = message["role"]
-            content = message["content"]
-            if role == "user":
-                st.markdown(f'<div class="chat-user">👤 User: {content}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="chat-ai">🤖 Analyst: {content}</div>', unsafe_allow_html=True)
-        
-        # Question input
-        question = st.text_input("Ask about the document:", placeholder="Type your question here...", key="question_input")
-        
-        col1, col2 = st.columns([1, 6])
-        with col1:
-            if st.button("🚀 Ask"):
-                if not question:
-                    st.warning("Please enter a question")
-                else:
-                    # Add user question to history
-                    st.session_state.messages.append({"role": "user", "content": question})
-                    
-                    # Get context (combine text chunks)
-                    context = "\n".join([chunk.page_content for chunk in chunks[:4]])  # Using first 4 chunks
-                    
-                    with st.spinner("💡 Analyzing..."):
-                        try:
-                            response = qa_agent.run({
-                                "context": context,
-                                "question": question
-                            })
-                            
-                            # Add AI response to history
-                            st.session_state.messages.append({"role": "assistant", "content": response})
-                            
-                            # Rerun to update chat display
-                            st.rerun()
-                            
-                        except Exception as e:
-                            st.error(f"Analysis failed: {str(e)}")
+    except Exception as e:
+        st.error(f"Analysis failed: {str(e)}")
 
-# Footer
-st.markdown("""
-<div class="footer">
-    <p>Developed by Waqas Baloch • 📧 <a href="mailto:waqaskhosa99@gmail.com" style="color: white;">waqaskhosa99@gmail.com</a></p>
-</div>
-""", unsafe_allow_html=True)
+def main():
+    initialize_session_state()
+    
+    # File upload section
+    if handle_file_upload():
+        chat_interface()
+    
+    # Footer
+    st.markdown("""
+    <div class="footer">
+        <p>Developed by Waqas Baloch • 📧 <a href="mailto:waqaskhosa99@gmail.com" style="color: white;">waqaskhosa99@gmail.com</a></p>
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
