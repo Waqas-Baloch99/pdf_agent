@@ -37,7 +37,7 @@ MODEL_OPTIONS = {
     "deepseek-r1": {
         "name": "DeepSeek R1",
         "key_env": "DEEPSEEK_API_KEY",
-        "class": DeepSeek
+        "class": OpenAI
     }
 }
 
