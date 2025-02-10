@@ -151,14 +151,14 @@ def initialize_agent():
                 ),
                 prompt=PromptTemplate.from_template("""
                 Analyze this document content and provide specific answers:
-
+                
                 Document Content: {context}
                 User Question: {question}
-
+                
                 Respond in this exact format:
                 ### Specific Answer
                 [Direct, detailed answer using exact terms from document]
-
+                
                 ### Key Details
                 - [Relevant fact 1]
                 - [Relevant fact 2]
@@ -202,7 +202,7 @@ def chat_interface():
             preview_text = " [...] ".join([
                 doc.page_content[:400] 
                 for doc in st.session_state.processed_docs['chunks'][:2]
-            )
+            ])
             st.markdown(f"```\n{preview_text}\n...```")
         
         st.markdown("### 💬 Document Analysis Chat")
