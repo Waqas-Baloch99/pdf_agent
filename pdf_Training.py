@@ -1,6 +1,5 @@
 import os
 import streamlit as st
-from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
@@ -8,9 +7,6 @@ from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import tempfile
 from openai import OpenAI  # Correct import for DeepSeekAI
-
-# Load environment variables
-load_dotenv()
 
 # Initialize session state
 def initialize_session_state():
@@ -31,12 +27,12 @@ initialize_session_state()
 MODEL_OPTIONS = {
     "gemini-pro": {
         "name": "Google Gemini Pro",
-        "key_env": "GOOGLE_API_KEY",
+        "key_secret": "GOOGLE_API_KEY",  # Use key from secrets.toml
         "class": ChatGoogleGenerativeAI
     },
     "deepseek-r1": {
         "name": "DeepSeek R1",
-        "key_env": "DEEPSEEK_API_KEY",
+        "key_secret": "DEEPSEEK_API_KEY",  # Use key from secrets.toml
         "class": OpenAI
     }
 }
@@ -102,14 +98,11 @@ with st.container():
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-# API Key Handling
-try:
-    api_key = st.secrets[MODEL_OPTIONS[selected_model]["key_env"].lower()]
-except:
-    api_key = os.getenv(MODEL_OPTIONS[selected_model]["key_env"])
+# API Key Handling from Streamlit secrets
+api_key = st.secrets.get(MODEL_OPTIONS[selected_model]["key_secret"])
 
 if not api_key:
-    st.error(f"{MODEL_OPTIONS[selected_model]['name']} API key not found!")
+    st.error(f"{MODEL_OPTIONS[selected_model]['name']} API key not found in Streamlit secrets!")
     st.stop()
 
 def handle_file_upload():
@@ -189,10 +182,7 @@ def initialize_agent():
 def process_question(question):
     try:
         qa_agent = initialize_agent()
-        context = " ".join([
-            chunk.page_content[:2000] 
-            for chunk in st.session_state.processed_docs['chunks'][:3]
-        ])
+        context = " ".join([chunk.page_content[:2000] for chunk in st.session_state.processed_docs['chunks'][:3]])
 
         with st.spinner("Generating answer..."):
             response = qa_agent.run({
