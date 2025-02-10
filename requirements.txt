@@ -1,5 +1,5 @@
 streamlit
-langchain
+langchain_community
 langchain-google-genai
 python-dotenv
 faiss-cpu
