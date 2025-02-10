@@ -6,7 +6,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import tempfile
-from openai import OpenAI  # Correct import for DeepSeekAI
+from openai import OpenAI
 
 # Initialize session state
 def initialize_session_state():
@@ -27,20 +27,25 @@ initialize_session_state()
 MODEL_OPTIONS = {
     "gemini-pro": {
         "name": "Google Gemini Pro",
-        "key_secret": "GOOGLE_API_KEY",  # Use key from secrets.toml
-        "class": ChatGoogleGenerativeAI
+        "secret_section": "google",
+        "class": ChatGoogleGenerativeAI,
+        "params": {
+            "model": "gemini-pro",
+            "temperature": 0.3
+        }
     },
     "deepseek-r1": {
         "name": "DeepSeek R1",
-        "key_secret": "DEEPSEEK_API_KEY",  # Use key from secrets.toml
-        "class": OpenAI
+        "secret_section": "deepseek",
+        "class": OpenAI,
+        "params": {}
     }
 }
 
 # Custom CSS styling
 st.markdown("""
 <style>
-  .header {  
+    .header { 
         padding: 20px;
         background: linear-gradient(45deg, #2E86C1, #3498DB);
         color: white;
@@ -48,37 +53,37 @@ st.markdown("""
         text-align: center;
         margin-bottom: 25px;
     }
-  .model-selector {
+    .model-selector {
         margin-bottom: 1.5rem;
         padding: 10px;
         border-radius: 8px;
         background: #f8f9fa;
     }
-  .upload-section {  
+    .upload-section { 
         border: 2px dashed #2E86C1;
         border-radius: 10px;
         padding: 2rem;
         text-align: center;
         margin-bottom: 2rem;
     }
-  .chat-bubble {  
+    .chat-bubble { 
         padding: 15px 20px;
         margin: 12px 0;
         max-width: 80%;
         clear: both;
         border-radius: 15px;
     }
-  .user {  
+    .user { 
         background: #2E86C1;
         color: white;
         float: right;
     }
-  .assistant {  
+    .assistant { 
         background: #f0f2f6;
         color: #2c3e50;
         float: left;
     }
-  .footer {  
+    .footer { 
         margin-top: 50px;
         padding: 20px;
         text-align: center;
@@ -98,11 +103,12 @@ with st.container():
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-# API Key Handling from Streamlit secrets
-api_key = st.secrets.get(MODEL_OPTIONS[selected_model]["key_secret"])
-
-if not api_key:
-    st.error(f"{MODEL_OPTIONS[selected_model]['name']} API key not found in Streamlit secrets!")
+# API Key Handling
+try:
+    model_config = MODEL_OPTIONS[selected_model]
+    api_key = st.secrets[model_config["secret_section"]]["api_key"]
+except KeyError as e:
+    st.error(f"API key configuration error: {str(e)}")
     st.stop()
 
 def handle_file_upload():
@@ -121,11 +127,11 @@ def handle_file_upload():
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                     tmp_file.write(uploaded_file.getbuffer())
-
+                
                 with st.spinner("Analyzing document..."):
                     loader = PyPDFLoader(tmp_file.name)
                     documents = loader.load()
-
+                    
                     text_splitter = RecursiveCharacterTextSplitter(
                         chunk_size=10000,
                         chunk_overlap=1000
@@ -148,26 +154,24 @@ def initialize_agent():
     if not st.session_state.qa_agent or st.session_state.selected_model != selected_model:
         try:
             model_config = MODEL_OPTIONS[selected_model]
-
+            llm_class = model_config["class"]
+            
             if selected_model == "gemini-pro":
-                llm = model_config["class"](
-                    model=selected_model,
-                    temperature=0.3,
+                llm = llm_class(
+                    **model_config["params"],
                     google_api_key=api_key
                 )
             elif selected_model == "deepseek-r1":
-                llm = model_config["class"](
-                    api_key=api_key
-                )
+                llm = llm_class(api_key=api_key)
 
             st.session_state.qa_agent = LLMChain(
                 llm=llm,
                 prompt=PromptTemplate.from_template("""
                 Analyze the document and provide a concise answer:
-
+                
                 Context: {context}
                 Question: {question}
-
+                
                 Answer format:
                 - Direct answer (1-2 sentences)
                 - 3 key supporting points
@@ -182,7 +186,10 @@ def initialize_agent():
 def process_question(question):
     try:
         qa_agent = initialize_agent()
-        context = " ".join([chunk.page_content[:2000] for chunk in st.session_state.processed_docs['chunks'][:3]])
+        context = " ".join([
+            chunk.page_content[:2000] 
+            for chunk in st.session_state.processed_docs['chunks'][:3]
+        ])
 
         with st.spinner("Generating answer..."):
             response = qa_agent.run({
@@ -194,7 +201,7 @@ def process_question(question):
             "role": "assistant",
             "content": response
         })
-
+        
     except Exception as e:
         st.error(f"Error: {str(e)}")
     finally:
@@ -203,20 +210,20 @@ def process_question(question):
 def main():
     if handle_file_upload():
         st.markdown("### 💬 Document Q&A")
-
+        
         for message in st.session_state.messages:
             css_class = "user" if message["role"] == "user" else "assistant"
             st.markdown(
                 f'<div class="chat-bubble {css_class}">{message["content"]}</div>',
                 unsafe_allow_html=True
             )
-
+        
         question = st.text_input("Ask your question:", key="question_input")
-
+        
         if st.button("Get Answer") and question:
             st.session_state.messages.append({"role": "user", "content": question})
             process_question(question)
-
+    
     st.markdown("""
     <div class="footer">
         <p>Developed by Waqas Baloch • Contact: waqaskhosa99@gmail.com</p>
