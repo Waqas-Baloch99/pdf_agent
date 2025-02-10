@@ -244,7 +244,7 @@ def main():
     
     st.markdown("""
     <div class="footer">
-        <p>Developed by Waqas Baloch • 📧 <a href="mailto:waqaskhosa99@gmail.com">waqaskhosa99@gmail.com</a></p>
+        <p>Developed by Waqas Baloch - 📧 <a href="mailto:waqaskhosa99@gmail.com">waqaskhosa99@gmail.com</a></p>
     </div>
     """, unsafe_allow_html=True)
 
