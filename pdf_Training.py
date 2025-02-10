@@ -14,7 +14,7 @@ load_dotenv()
 # Initialize session state
 def initialize_session_state():
     session_defaults = {
-        "messages":,
+        "messages":[],
         "processed_docs": None,
         "file_key": 0,
         "qa_agent": None,
