@@ -7,4 +7,5 @@ python-dotenv
 faiss-cpu
 sentence-transformers
 protobuf
+requests
 
