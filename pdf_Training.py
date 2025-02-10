@@ -157,9 +157,8 @@ def initialize_agent():
                 Context: {context}
                 Question: {question}
                 
-                Answer format:
-                • Direct answer (max 50 words)
-                • Key supporting points (3 bullet points)
+                Answer:
+                [Provide a relevant and short answer based on the document content.]
                 """)
             )
         except Exception as e:
