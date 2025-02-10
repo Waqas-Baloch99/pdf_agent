@@ -1,7 +1,6 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
-import requests
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
@@ -19,7 +18,7 @@ def initialize_session_state():
         "processed_docs": None,
         "file_key": 0,
         "qa_agent": None,
-        "selected_model": "gemini-pro"  # Default model
+        "selected_model": "gemini-pro"
     }
     for key, value in session_defaults.items():
         if key not in st.session_state:
@@ -27,194 +26,213 @@ def initialize_session_state():
 
 initialize_session_state()
 
-# API Key Configuration (Google and DeepSeek)
-try:
-    GOOGLE_API_KEY = st.secrets["google"]["api_key"]
-    DEEPSEEK_API_KEY = st.secrets["deepseek"]["api_key"]  # Get DeepSeek key
-except (KeyError, AttributeError):
-    st.error("API keys not found in secrets!")
-    st.stop()
+# Model Configuration
+MODEL_OPTIONS = {
+    "gemini-pro": {
+        "name": "Google Gemini Pro",
+        "key_env": "GOOGLE_API_KEY",
+        "class": ChatGoogleGenerativeAI
+    },
+    "deepseek-r1": {
+        "name": "DeepSeek R1",
+        "key_env": "DEEPSEEK_API_KEY",
+        "class": None  # Replace with actual DeepSeek class
+    }
+}
 
-# DeepSeek API Configuration
-DEEPSEEK_API_URL = "https://api.deepseek.com/v1/inference"  # Replace with actual DeepSeek API URL
-
-# Custom CSS (same as before)
+# Custom CSS styling
 st.markdown("""
 <style>
-    /* ... (Your CSS code here) ... */
+    .header { 
+        padding: 20px;
+        background: linear-gradient(45deg, #2E86C1, #3498DB);
+        color: white;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .model-selector {
+        margin-bottom: 1.5rem;
+        padding: 10px;
+        border-radius: 8px;
+        background: #f8f9fa;
+    }
+    .upload-section { 
+        border: 2px dashed #2E86C1;
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .chat-bubble { 
+        padding: 15px 20px;
+        margin: 12px 0;
+        max-width: 80%;
+        clear: both;
+        border-radius: 15px;
+    }
+    .user { 
+        background: #2E86C1;
+        color: white;
+        float: right;
+    }
+    .assistant { 
+        background: #f0f2f6;
+        color: #2c3e50;
+        float: left;
+    }
+    .footer { 
+        margin-top: 50px;
+        padding: 20px;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header"><h1>📑 SmartDoc Analyzer Pro</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header"><h1>📄 Multi-Model Doc Analyzer</h1></div>', unsafe_allow_html=True)
 
 # Model Selection
-st.markdown("### Select Language Model:")
-model_options = ["gemini-pro", "deepseek-r1"]
-st.session_state.selected_model = st.selectbox("Choose a model:", model_options, index=model_options.index(st.session_state.selected_model))
+with st.container():
+    st.markdown('<div class="model-selector">', unsafe_allow_html=True)
+    selected_model = st.selectbox(
+        "Choose AI Model:",
+        options=list(MODEL_OPTIONS.keys()),
+        format_func=lambda x: MODEL_OPTIONS[x]["name"]
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# API Key Handling
+try:
+    api_key = st.secrets[MODEL_OPTIONS[selected_model]["key_env"].lower()]
+except:
+    api_key = os.getenv(MODEL_OPTIONS[selected_model]["key_env"])
+
+if not api_key:
+    st.error(f"{MODEL_OPTIONS[selected_model]['name']} API key not found!")
+    st.stop()
 
 def handle_file_upload():
     with st.container():
-        st.markdown('<div class="upload-section">', unsafe_allow_html=True)
         uploaded_file = st.file_uploader(
-            "📤 Upload PDF Document (Max 50MB)",
+            "📤 Upload PDF Document",
             type=["pdf"],
             key=f"uploader_{st.session_state.file_key}"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
 
-        if uploaded_file is not None:
+        if uploaded_file:
             if st.session_state.processed_docs and st.session_state.processed_docs.get('file_id') == uploaded_file.file_id:
-                st.info("✅ Document already processed")
+                st.info("Document already processed")
                 return True
 
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                     tmp_file.write(uploaded_file.getbuffer())
-
-                with st.spinner("🔍 Analyzing document..."):
+                
+                with st.spinner("Analyzing document..."):
                     loader = PyPDFLoader(tmp_file.name)
                     documents = loader.load()
-
+                    
                     text_splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=6000,
-                        chunk_overlap=600
+                        chunk_size=10000,
+                        chunk_overlap=1000
                     )
                     chunks = text_splitter.split_documents(documents)
 
                     st.session_state.processed_docs = {
-                        'chunks': chunks[:4],  # Limit to first 4 chunks
+                        'chunks': chunks[:4],
                         'file_id': uploaded_file.file_id
                     }
-                    st.session_state.messages = []
                     os.unlink(tmp_file.name)
                     return True
 
             except Exception as e:
-                st.error(f"❌ Processing error: {str(e)}")
+                st.error(f"Error: {str(e)}")
                 st.session_state.file_key += 1
                 return False
-        return False #Return false if no file is uploaded
 
 def initialize_agent():
-    if not st.session_state.qa_agent:
+    if not st.session_state.qa_agent or st.session_state.selected_model != selected_model:
         try:
-            if st.session_state.selected_model == "gemini-pro":
-                st.session_state.qa_agent = LLMChain(
-                    llm=ChatGoogleGenerativeAI(
-                        model="gemini-pro",
-                        temperature=0.3,
-                        max_output_tokens=800,
-                        google_api_key=GOOGLE_API_KEY
-                    ),
-                    prompt=PromptTemplate.from_template("""
-                        Provide concise answer based on this document content:
-
-                        Context: {context}
-                        Question: {question}
-
-                        Answer:
-                        [Provide a relevant and short answer based on the document content.]
-                        """)
+            model_config = MODEL_OPTIONS[selected_model]
+            
+            if selected_model == "gemini-pro":
+                llm = model_config["class"](
+                    model=selected_model,
+                    temperature=0.3,
+                    google_api_key=api_key
                 )
-            elif st.session_state.selected_model == "deepseek-r1":
-                st.session_state.qa_agent = DeepSeekAPIAgent(DEEPSEEK_API_KEY, DEEPSEEK_API_URL)
-
+            elif selected_model == "deepseek-r1":
+                # Replace with actual DeepSeek initialization
+                llm = model_config["class"](
+                    model_name=selected_model,
+                    api_key=api_key
+                )
+            
+            st.session_state.qa_agent = LLMChain(
+                llm=llm,
+                prompt=PromptTemplate.from_template("""
+                Analyze the document and provide a concise answer:
+                
+                Context: {context}
+                Question: {question}
+                
+                Answer format:
+                - Direct answer (1-2 sentences)
+                - 3 key supporting points
+                """)
+            )
+            st.session_state.selected_model = selected_model
+            
         except Exception as e:
-            st.error(f"🤖 Agent initialization failed: {str(e)}")
+            st.error(f"Model initialization failed: {str(e)}")
     return st.session_state.qa_agent
-
-class DeepSeekAPIAgent:
-    def __init__(self, api_key, api_url):
-        self.api_key = api_key
-        self.api_url = api_url
-
-    def run(self, inputs):
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "prompt": f"{inputs['context']}\n{inputs['question']}",
-            # Add other DeepSeek API parameters as needed (e.g., temperature, max_tokens)
-        }
-        try:
-            response = requests.post(self.api_url, headers=headers, json=data, timeout=10) # Set a timeout
-            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-            result = response.json()
-            answer = self.extract_answer(result)
-            return answer
-        except requests.exceptions.RequestException as e:
-            st.error(f"DeepSeek API Error: {e}")
-            return None
-        except Exception as e: # Catch any other exceptions
-            st.error(f"An unexpected error occurred: {e}")
-            return None
-
-    def extract_answer(self, result):
-        try:
-            # Adapt this to the actual structure of DeepSeek's API response
-            # Example (you'll likely need to change this):
-            return result.get('choices', [{}])[0].get('text', "Could not extract answer")  # Handle missing keys
-        except (KeyError, IndexError, TypeError) as e:  # Handle potential errors
-            st.error(f"Error extracting answer: {e}.  Check DeepSeek API response format.")
-            return "Could not extract answer"
-
 
 def process_question(question):
     try:
         qa_agent = initialize_agent()
-        if not qa_agent:
-            return
-
         context = " ".join([
-            chunk.page_content[:2000]
+            chunk.page_content[:2000] 
             for chunk in st.session_state.processed_docs['chunks'][:3]
-        ])
+        )
 
-        with st.spinner("💡 Analyzing..."):
+        with st.spinner("Generating answer..."):
             response = qa_agent.run({
                 "context": context,
                 "question": question
             })
 
-        if response:  # Check if response is not None
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": response
-            })
-
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": response
+        })
+        
     except Exception as e:
-        st.error(f"⚠️ Analysis error: {str(e)}")
+        st.error(f"Error: {str(e)}")
     finally:
-        st.rerun()  # Rerun to update the chat display
+        st.rerun()
 
-
-def chat_interface():
-    if st.session_state.processed_docs:
-        with st.expander("📄 Document Preview", expanded=False):
-            preview_text = " [...] ".join([
-                doc.page_content[:400]
-                for doc in st.session_state.processed_docs['chunks'][:2]
-            ])
-            st.markdown(f"```\n{preview_text}\n...```")
-
+def main():
+    if handle_file_upload():
         st.markdown("### 💬 Document Q&A")
-
+        
         for message in st.session_state.messages:
-            if message["role"] == "user":
-                st.markdown(
-                    f'<div class="chat-bubble user">👤 {message["content"]}</div>',
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f'<div class="chat-bubble assistant">🤖 {message["content"]}</div>',
-                    unsafe_allow_html=True
-                )
+            css_class = "user" if message["role"] == "user" else "assistant"
+            st.markdown(
+                f'<div class="chat-bubble {css_class}">{message["content"]}</div>',
+                unsafe_allow_html=True
+            )
+        
+        question = st.text_input("Ask your question:", key="question_input")
+        
+        if st.button("Get Answer") and question:
+            st.session_state.messages.append({"role": "user", "content": question})
+            process_question(question)
+    
+    st.markdown("""
+    <div class="footer">
+        <p>Developed by Waqas Baloch • Contact: waqaskhosa99@gmail.com</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-        question = st.text_input(
-            "Ask your question:",
-            placeholder="Type question here...",
-            key="question_input",
-            label_visibility="collapsed"
-        )
+if __name__ == "__main__":
+    main()
