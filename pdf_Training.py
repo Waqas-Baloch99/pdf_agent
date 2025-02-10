@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
-from langchain_community.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
@@ -55,7 +55,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize configuration
-GOOGLE_API_KEY = st.secrets["google"]["api_key"]
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Check for API key
 if not GOOGLE_API_KEY:
@@ -125,15 +125,14 @@ uploaded_file = st.file_uploader("📤 Upload PDF Document", type=["pdf"],
                                 help="Max file size: 50MB")
 
 # Reset chat history if new file uploaded
-if uploaded_file:
-    # Ensure new file resets session history
-    if uploaded_file != st.session_state.current_file:
-        st.session_state.messages = []
-        st.session_state.current_file = uploaded_file
+if uploaded_file and uploaded_file != st.session_state.current_file:
+    st.session_state.messages = []
+    st.session_state.current_file = uploaded_file
 
+if uploaded_file:
     with st.spinner("🔍 Analyzing document..."):
         chunks, tmp_path = process_pdf(uploaded_file)
-
+    
     if chunks:
         # Document preview
         with st.expander("📄 Document Preview"):
