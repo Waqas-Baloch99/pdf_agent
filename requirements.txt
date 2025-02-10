@@ -3,7 +3,7 @@ langchain
 langchain-google-genai
 pypdf==4.2.0
 python-dotenv==1.0.1
-streamlit==1.35.0
+streamlit
 faiss-cpu==1.8.0
 sentence-transformers==2.7.0
 protobuf==3.20.3
