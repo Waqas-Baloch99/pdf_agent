@@ -215,7 +215,7 @@ def chat_interface():
             preview_text = " [...] ".join([
                 doc.page_content[:400] 
                 for doc in st.session_state.processed_docs['chunks'][:2]
-            )
+            ])
             st.markdown(f"```\n{preview_text}\n...```")
         
         st.markdown("### 💬 Document Analysis Chat")
