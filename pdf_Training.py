@@ -24,7 +24,7 @@ def initialize_session_state():
 
 initialize_session_state()
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+GOOGLE_API_KEY = st.secrets["google"]["api_key"]
 if not GOOGLE_API_KEY:
     st.error("Google API key not found! Configure it in .env or secrets.")
     st.stop()
